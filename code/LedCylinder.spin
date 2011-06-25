@@ -130,7 +130,6 @@ var
   ' 0: debug
   byte semaphores[8]
 
-
   long delay
   long i
   long j
@@ -138,120 +137,294 @@ var
   long y
   long r
   long dir
-OBJ
- '  debug         : "DebugController"
-   cylinderPWM   : "CylinderControllerPWM"
-   cylinderTrans : "CylinderControllerTransmitter"
-'  testdebug     : "TestQueueDebug"
-   nunchuck      : "Nunchuck"
-   terminal      : "Parallax Serial Terminal"
-   random        : "RealRandom"
-PUB Main
-'  clkset(%01101101, 64_000_000) ' 16MHz crystal with x4 multipler
+  long keycode
 
-  ' Turn blue light on
+  long calibX
+  long calibY
+
+  ' index of current display, 1..maxDisplays
+  long currentDisplay
+
+  byte menuControl
+
+obj
+   cylinderPWM     : "CylinderControllerPWM"
+   cylinderTrans   : "CylinderControllerTransmitter"
+   nunchuck        : "Nunchuck"
+'   terminal        : "Parallax Serial Terminal"
+   random          : "RealRandom"
+   frame           : "FrameManipulation"
+   LCD             : "jm_lcd4_ez"
+   displayStartup  : "DisplayStartup"
+   displayRandom   : "DisplayRandom"
+   displayTest     : "DisplayTest"
+   displaySmiley   : "DisplayImage"
+   displayBlobs    : "DisplayBlobs"
+   displaySelfPong : "DisplaySelfPong"
+   displayRain     : "DisplayRain"
+   displaySpinner  : "DisplaySpinner"
+   displayRainbow  : "DisplayRainbow"
+   displayLife     : "DisplayLife"
+'   displayFade   : "DisplayFade"
+'   displayBars   : "DisplayBars"
+
+pub Main | rpt, newDisplay
+  ' Turn blue light on. Any project worth it's salt has to have a blue light.
   dira[TEST_LED_PIN] := 1
   outa[TEST_LED_PIN] := 1
 
-  ' set up global buffers
-  globalBuffers[0] := @frameBuffer
-  globalBuffers[2] := @frameControl
-  globalBuffers[9] := @debugBuffer
-
-  ' start debugging
-'  debug.Start
-'  semaphores[0] := locknew
-'  debugBuffer[0] := 0
-'  testdebug.Start(@globalBuffers, @semaphores, 5000000)
-  terminal.Start(115200)
-  terminal.Str(String("Cylinder started"))
+'  terminal.Start(115200)
+'  terminal.Str(String("Started"))
+'  terminal.NewLine
 
   random.start
 
+  ' set up global buffers
+  globalBuffers[0] := @frameBuffer
+  globalBuffers[1] := @frameBufferControl
+  globalBuffers[2] := random.random_ptr
+
+  ' initialise frame buffer
+  frameBufferControl := 0
+  frame.Init(@globalBuffers)
+  frame.SetDrawingBuffer(1)  ' clear both frame buffers
+  frame.ShowAll(0)
+  frame.SetDrawingBuffer($ff0000)
+  frame.ShowAll(0)
+
+  ' start the assembly-base cog that gives faster frame manipulation functions
+  frame.Start
+
+  LCD.init(LCDBasePin, 2, 16)
+  LCD.display(1)
+  LCD.cmd(LCD#HOME)
+  LCD.str(string(" WELCOME HUMAN  "))
+  LCD.cmd(LCD#LINE2)
+  LCD.str(string("                "))
+
+  ' nunchuck init on standard i2c pins
+  nunchuck.init(28,29)
+
+  ' calibrate x and y
+  nunchuck.readNunchuck 'read data from Nunchuck
+  calibX := nunchuck.joyX
+  calibY := nunchuck.joyY
+  waitcnt(clkfreq/64 + cnt) 'wait for a short period (important when using nunchuck, or will return bad data)
+
   ' start cylinder
   currentLedRow := 3
-  cylinderTrans.Start(@currentLedRow, @frameBuffer)
+  cylinderTrans.Start(@currentLedRow, @frameBuffer, @frameBufferControl)
   cylinderPWM.Start(@currentLedRow)
 
+  ' Set the enable pin low, which enables physical refresh. By default this pin is an
+  ' input and pulled high, which disables the 74HC139 that drives row anodes. When
+  ' the propeller gets reset, it goes back to input, effectively blanking the output.
+  ' This allows us to overdrive the current in the LEDs. Without this explicit enabling,
+  ' a random row will be driven by the TLC5940's, with no multiplexing, which could burn
+  ' the LEDs out on that row.
+  dira[ENABLE_DISPLAY_PIN] := 1
+  outa[ENABLE_DISPLAY_PIN] := 0
+
+  ' initialise, which triggers change in display
+  currentDisplay := 0
+  newDisplay := DISPLAY_STARTUP
+  rpt := 0
+
+  menuControl := 0
+
+  ' This is the main control loop.
   repeat
-    showAll($ffffff)
-    waitcnt(150_000_000 + cnt)
+    if currentDisplay <> 0
+      newDisplay := currentDisplay
 
-    delay := 100_100
-    repeat 5
-      ' go down
-      i := 255
-      repeat until i == 0
-        j := (i << 16) + (i << 8) + i
-        showAll(j)
-        waitcnt(delay + cnt)
-        i := i - 1
+    ' read data from nunchuck, with a short delay afterwards, or it will return bad data.
+    nunchuck.readNunchuck
+    waitcnt(clkfreq/64 + cnt)
 
-      ' go up
-      i := 0
-      repeat until i == 255
-        j := (i << 16) + (i << 8) + i
-        showAll(j)
-        waitcnt(delay + cnt)
-        i := i + 1
+    calcMenuControl
 
-      delay := delay - 20_000
+'    LCD.cmd(LCD#HOME)
+'    LCD.str(String("x="))
+'    LCD.dec(nunchuck.joyX - calibX)
+'    LCD.str(String(" y="))
+'    LCD.dec(nunchuck.joyY - calibY)
+'    LCD.str(String("     "))
 
-    showAll($ff0000)
-    waitcnt(150_000_000 + cnt)
-    showAll($00ff00)
-    waitcnt(150_000_000 + cnt)
-    showAll($0000ff)
-    waitcnt(150_000_000 + cnt)
+'    LCD.cmd(LCD#LINE2)
+'    LCD.str(String("bz="))
+'    LCD.dec(nunchuck.buttonZ)
+'    LCD.str(String(" "))
+'    LCD.str(String("bc="))
+'    LCD.dec(nunchuck.buttonC)
+'    LCD.str(String("   "))
 
-    ' red rows up and down
-    i := $ff0000
-    repeat 3
-      repeat m from 0 to 7
-        showRow(m, i)
-        waitcnt(5_000_000 + cnt)
-      repeat m from 6 to 1
-        showRow(m, i)
-        waitcnt(5_000_000 + cnt)
-      i >>= 8
+    ' Work out changes selected by user, if any
+    if menuControl == MENU_STATE_RIGHT_FINAL
+      newDisplay := newDisplay + 1
+      if newDisplay > MAX_DISPLAYS
+        newDisplay := 1
+      menuControl := MENU_STATE_NONE
+    if menuControl == MENU_STATE_LEFT_FINAL
+      newDisplay := newDisplay - 1
+      if newDisplay < 1
+        newDisplay := MAX_DISPLAYS
+      menuControl := MENU_STATE_NONE
 
-    repeat 100
-      r := random.random
-      r &= $ffffff
-      r += 1000
-      showRandom
-      waitcnt(r + cnt)
+    'output data read to serial port
+'    uart.dec(Nun.joyX)
+'    uart.dec(Nun.joyY)
+'    uart.dec(Nun.accelX)
+'    uart.dec(Nun.accelY)
+'    uart.dec(Nun.accelZ)
+'    uart.dec(Nun.pitch)
+'    uart.dec(Nun.roll)
+'    uart.dec(Nun.buttonC)
+'    uart.dec(Nun.buttonZ)
 
-PRI showAll(colour) | ci
-  repeat ci from 0 to 255
-    frameBuffer[ci] := colour
+    if newDisplay <> currentDisplay and rpt == 0
+      ' stop old display, if there is one
+      case currentDisplay
+        DISPLAY_STARTUP:
+          displayStartup.Stop
 
-PRI showRandom | v
-  repeat v from 0 to 255
-    frameBuffer[v] := random.random
+        DISPLAY_BLOBS:
+          displayBlobs.Stop
 
-PUB showRow(row,colour) | v, k
-  repeat v from 0 to 255
-    if v => row * 16 and v < (row+1) * 16
-      frameBuffer[v] := colour
-    else
-      frameBuffer[v] := 0
-  return
+        DISPLAY_RAIN:
+          displayRain.Stop
 
-'  nunchuck.init(26,27)
-  repeat
-'    terminal.Char("X")
-'    outa[BLUEPIN] := 1
-'    nunchuck.readNunchuck
- '   outa[REDPIN] := 1
-'    terminal.Dec(nunchuck.buttonZ)
-'    if nunchuck.buttonZ
-'      frameBuffer[0] := $ffffff
- '   else
-'      frameBuffer[0] := 0
-'    y := nunchuck.joyX ' 0-255
-'    frameBuffer[0] := y << 16
+        DISPLAY_PULSER:
+'          displayRain.Stop
 
-'    waitcnt(cnt + 5_000_000)
-'    outa[GREENPIN] := 0
+        DISPLAY_DROPS:
+'          displayRain.Stop
+
+        DISPLAY_RINGS:
+'          displayRain.Stop
+
+        DISPLAY_RAINBOW:
+          displayRainbow.Stop
+
+        DISPLAY_SPINNER:
+          displaySpinner.Stop
+
+        DISPLAY_FLASHER:
+'          displaySpinner.Stop
+
+        DISPLAY_LIFE:
+'          displaySpinner.Stop
+
+        DISPLAY_RANDOM:
+          displayRandom.Stop
+
+        DISPLAY_IMAGE:
+          displaySmiley.Stop
+
+        DISPLAY_SELFPONG:
+          displaySelfPong.Stop
+
+        DISPLAY_TEST:
+          displayTest.Stop
+
+      currentDisplay := newDisplay
+
+      ' start new display
+      case currentDisplay
+        DISPLAY_STARTUP:
+          displayStartup.Start(@globalBuffers)
+
+        DISPLAY_BLOBS:
+          setName(string("Blobs   "))
+          displayBlobs.Start(@globalBuffers)
+
+        DISPLAY_RAIN:
+          setName(string("Rain    "))
+          displayRain.Start(@globalBuffers)
+
+        DISPLAY_PULSER:
+          setName(string("Pulser  "))
+'          displayRain.Start(@globalBuffers)
+
+        DISPLAY_DROPS:
+          setName(string("Drops   "))
+'          displayRain.Start(@globalBuffers)
+
+        DISPLAY_RINGS:
+          setName(string("Rings   "))
+'          displayRain.Start(@globalBuffers)
+
+        DISPLAY_RAINBOW:
+          setName(string("Rainbow "))
+          displayRainbow.Start(@globalBuffers)
+
+        DISPLAY_SPINNER:
+          setName(string("Spinner "))
+          displaySpinner.Start(@globalBuffers)
+
+        DISPLAY_FLASHER:
+          setName(string("Flasher "))
+          displaySpinner.Start(@globalBuffers)
+
+        DISPLAY_LIFE:
+          setName(string("Life "))
+          displaySpinner.Start(@globalBuffers)
+
+        DISPLAY_RANDOM:
+          setName(string("Random  "))
+          displayRandom.Start(@globalBuffers)
+
+        DISPLAY_IMAGE:
+          setName(string("Image   "))
+          displaySmiley.Start(@globalBuffers)
+
+        DISPLAY_SELFPONG:
+          setName(string("SelfPong"))
+          displaySelfPong.Start(@globalBuffers)
+
+        DISPLAY_TEST:
+          setName(string("Test    "))
+          displayTest.Start(@globalBuffers)
+
+' set menu control based on nunchuck inputs and prior state
+pub calcMenuControl
+  ' first, both C but not Z must be pressed
+  if nunchuck.buttonC <> 1 and nunchuck.buttonZ <> 0
+    menuControl := MENU_STATE_NONE
+    return
+
+  if menuControl == MENU_STATE_NONE and nunchuck.joyX > 80
+    menuControl := MENU_STATE_RIGHT_1
+    return
+  if menuControl == MENU_STATE_RIGHT_1
+    if nunchuck.joyX < 81
+      menuControl := MENU_STATE_RIGHT_FINAL
+    return
+  if menuControl == MENU_STATE_NONE and nunchuck.joyX < -80
+    menuControl := MENU_STATE_LEFT_1
+    return
+  if menuControl == MENU_STATE_LEFT_1
+    if nunchuck.joyX > -80
+      menuControl := MENU_STATE_LEFT_FINAL
+    return
+
+  menuControl := MENU_STATE_NONE
+'  Nun.buttonC
+ ' MENU_STATE_NONE               = 0
+'  MENU_STATE_LEFT_1             = 1
+'  MENU_STATE_LEFT_FINAL         = 2
+'  MENU_STATE_RIGHT_1            = 3
+'  MENU_STATE_RIGHT_FINAL        = 4
+'  MENU_STATE_UP_1               = 5
+'  MENU_STATE_UP_FINAL           = 6
+'  MENU_STATE_DOWN_1             = 7
+'  MENU_STATE_DOWN_FINAL         = 8
+
+pub setName(str)
+  LCD.cmd(LCD#HOME)
+  LCD.str(string("mode: "))
+  LCD.str(str)
+  LCD.str(string("   "))
+  LCD.cmd(LCD#LINE2)
+  LCD.str(string("                "))
+  LCD.cursor(2)
 
