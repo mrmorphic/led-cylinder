@@ -5,9 +5,9 @@ VAR
 
 PUB Start(currentLedRowPtr) : success
   Stop
- ' params := currentLedRowPtr
+
   current_row_addr := currentLedRowPtr
-  success := (cog := cognew(@run, 0 {currentLedRowPtr}))
+  success := (cog := cognew(@run, 0))
 
 PUB Stop
   if cog
