@@ -1,3 +1,9 @@
+' One half of the TLC5940 driver. This takes data from the frame buffer for
+' the next row and transmits it to the TLC5940 display drivers. It does this
+' while the PWM cycles take place. It sychronises with the PWM cycle by detecting
+' a change in the current row. PWM takes longer than data transmission.
+' This also implements double buffering using the frame buffer control. This has
+' the current drawing buffer, so this grabs data from the other buffer.
 
 VAR
   long Stack[50]
@@ -8,10 +14,12 @@ VAR
   ' contigous blocks for params
   long p0 ' frameBufPtr
   long p1 ' curLedRowPtr
+  long p2 ' frameControl
 
-PUB Start(currentLedRowPtr, frameBufferPtr) : success
+PUB Start(currentLedRowPtr, frameBufferPtr, frameControlPtr) : success
   Stop
   frame_buffer_addr := frameBufferPtr
+  frame_control_addr := frameControlPtr
   current_row_addr := currentLedRowPtr
   success := (cog := cognew(@run, 0))
 
@@ -42,6 +50,15 @@ refresh_layer
                         and     pixel_addr_top, #3          ' wrap 4 -> 0
                         shl     pixel_addr_top, #6          ' x 16 (pixels per row) * 4 (bytes per pixel)
                         add     pixel_addr_top, frame_buffer_addr
+
+                        ' If the drawing buffer is 0, then we really want to display
+                        ' out of buffer 1
+                        rdlong  frame_control, frame_control_addr
+                        mov     t, frame_control
+                        and     t, #3
+                        cmp     t, #2    WZ     ' buffering enabled, draw buffer is 0, the only case where we use the second buffer
+              if_z      add     pixel_addr_top, buffer_1_offset
+
                         mov     pixel_addr_bottom, pixel_addr_top
                         add     pixel_addr_top, bytes_per_bank
 
@@ -151,9 +168,15 @@ data_bits_to_send       long    0
 ' colour per pixel, whereas the TLC5940 uses 12 bits.
 pixel_bit_count         long    0
 
-' The address in main memory of the start of the frame buffer. Constant within
+' The address in main memory of the start of the frame buffers. Constant within
 ' cog execution.
 frame_buffer_addr       long    0
+
+' This holds the address of the frame control word, which tells us which buffer
+' to use
+frame_control_addr      long    0
+
+frame_control           long    0
 
 ' Variable pointer that points to the current pixel (address of long in main memory)
 pixel_addr_top          long    0
@@ -180,6 +203,8 @@ all_outs_mask           long    $3FF
 red_mask                long    $800000
 green_mask              long    $8000
 blue_mask               long    $80
+
+buffer_1_offset         long    512
 
 col_count               res     1
 
