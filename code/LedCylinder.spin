@@ -163,6 +163,7 @@ obj
    displaySelfPong : "DisplaySelfPong"
    displayRain     : "DisplayRain"
    displaySpinner  : "DisplaySpinner"
+   displayRings    : "DisplayRings"
    displayRainbow  : "DisplayRainbow"
    displayLife     : "DisplayLife"
 '   displayFade   : "DisplayFade"
@@ -300,7 +301,7 @@ pub Main | rpt, newDisplay
 '          displayRain.Stop
 
         DISPLAY_RINGS:
-'          displayRain.Stop
+          displayRings.Stop
 
         DISPLAY_RAINBOW:
           displayRainbow.Stop
@@ -312,7 +313,7 @@ pub Main | rpt, newDisplay
 '          displaySpinner.Stop
 
         DISPLAY_LIFE:
-'          displaySpinner.Stop
+          displayLife.Stop
 
         DISPLAY_RANDOM:
           displayRandom.Stop
@@ -351,7 +352,7 @@ pub Main | rpt, newDisplay
 
         DISPLAY_RINGS:
           setName(string("Rings   "))
-'          displayRain.Start(@globalBuffers)
+          displayRings.Start(@globalBuffers)
 
         DISPLAY_RAINBOW:
           setName(string("Rainbow "))
@@ -363,11 +364,11 @@ pub Main | rpt, newDisplay
 
         DISPLAY_FLASHER:
           setName(string("Flasher "))
-          displaySpinner.Start(@globalBuffers)
+'          displaySpinner.Start(@globalBuffers)
 
         DISPLAY_LIFE:
           setName(string("Life "))
-          displaySpinner.Start(@globalBuffers)
+          displayLife.Start(@globalBuffers)
 
         DISPLAY_RANDOM:
           setName(string("Random  "))
