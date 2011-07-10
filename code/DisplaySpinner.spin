@@ -62,7 +62,7 @@ PRI Run | i, delay, drop, nextCol, startCnt, c, y
   repeat i from 0 to MAX_PARTICLES - 1
     partX[i] := long[randomPtr] & $0f
     partY[i] := long[randomPtr] & $7f
-    partDir[i] := (long[randomPtr] & 7) + 1
+    partDir[i] := (long[randomPtr] & 3) + 1
     if long[randomPtr] & 1
       partDir[i] := 0 - partDir[i]
 '    partDir[i] := (long[randomPtr] & $3) - 2
@@ -104,9 +104,10 @@ PRI Run | i, delay, drop, nextCol, startCnt, c, y
       y := partY[i] >> 4
       frame.Pixel(partX[i], y, partColour[i])
       frame.PixelAlphaW(partX[i]-1, y, $80000000 | partColour[i])
-      frame.PixelAlphaW(partX[i]-2, y, $40000000 | partColour[i])
-'      frame.PixelAlphaW(partX[i]-3, y, $20000000 | partColour[i])
-'      frame.PixelAlphaW(partX[i]-4, y, $10000000 | partColour[i])
+      frame.PixelAlphaW(partX[i]-2, y, $60000000 | partColour[i])
+      frame.PixelAlphaW(partX[i]-3, y, $40000000 | partColour[i])
+      frame.PixelAlphaW(partX[i]-4, y, $20000000 | partColour[i])
+      frame.PixelAlphaW(partX[i]-5, y, $10000000 | partColour[i])
 '      frame.Pixel(partX[i]-1, y, partColour[i])
 '      frame.Pixel(partX[i]-2, y, partColour[i])
 '      frame.Pixel(partX[i]-3, y, partColour[i])
@@ -118,9 +119,9 @@ PRI Run | i, delay, drop, nextCol, startCnt, c, y
 
     frame.swapBuffers
 
-    delay := 500000 '5_000_000
+'    delay := 500000 '5_000_000
 
-    waitcnt(delay + cnt) ' gives us a more consistent frame rate
+'    waitcnt(delay + cnt) ' gives us a more consistent frame rate
 
 PRI Background
   frame.ShowAll(backgroundColour)
