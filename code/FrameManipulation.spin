@@ -152,6 +152,15 @@ pub Row(y,c) | i, j, buf
   repeat j from i to i + 15
     long[buf][j] := c
 
+pub Col(x,c) | offset, j, buf
+  if x < 0 or x > 15
+    return
+  buf := GetDrawingBuffer
+  offset := x
+  repeat j from 0 to 7
+    long[buf][offset] := c
+    offset := offset + 16
+
 pub CopyImage(destImagePtr, srcImagePtr) | count, w, h
   w := word[srcImagePtr][0]
   h := word[srcImagePtr][1]
