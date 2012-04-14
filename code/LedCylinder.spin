@@ -112,11 +112,11 @@ con
 '  _irrpin         = 26          'ir receiver module on this pin
 
   ' Constants for display handling
-  MAX_DISPLAYS      = 14
+  MAX_DISPLAYS      = 10
   #1
   DISPLAY_STARTUP
-  DISPLAY_BLOBS
   DISPLAY_RAIN
+  DISPLAY_BLOBS
 '  DISPLAY_PULSER
 '  DISPLAY_DROPS
   DISPLAY_RINGS
@@ -355,17 +355,11 @@ pub Main | rpt, newDisplay
         DISPLAY_STARTUP:
           displayStartup.Stop
 
-        DISPLAY_BLOBS:
-          displayBlobs.Stop
-
         DISPLAY_RAIN:
           displayRain.Stop
 
-'        DISPLAY_PULSER:
-'          displayRain.Stop
-
-'        DISPLAY_DROPS:
-'          displayRain.Stop
+        DISPLAY_BLOBS:
+          displayBlobs.Stop
 
         DISPLAY_RINGS:
           displayRings.Stop
@@ -378,9 +372,6 @@ pub Main | rpt, newDisplay
 
         DISPLAY_SPINNER:
           displaySpinner.Stop
-
-'        DISPLAY_FLASHER:
-'          displaySpinner.Stop
 
         DISPLAY_LIFE:
           displayLife.Stop
@@ -401,21 +392,13 @@ pub Main | rpt, newDisplay
         DISPLAY_STARTUP:
           displayStartup.Start(@globalBuffers)
 
-        DISPLAY_BLOBS:
-          setName(string("Blobs   "))
-          displayBlobs.Start(@globalBuffers)
-
         DISPLAY_RAIN:
           setName(string("Rain    "))
           displayRain.Start(@globalBuffers)
 
-'        DISPLAY_PULSER:
-'          setName(string("Pulser  "))
-'          displayRain.Start(@globalBuffers)
-
-'        DISPLAY_DROPS:
-'          setName(string("Drops   "))
-'          displayRain.Start(@globalBuffers)
+        DISPLAY_BLOBS:
+          setName(string("Blobs   "))
+          displayBlobs.Start(@globalBuffers)
 
         DISPLAY_RINGS:
           setName(string("Rings   "))
@@ -432,10 +415,6 @@ pub Main | rpt, newDisplay
         DISPLAY_SPINNER:
           setName(string("Spinner "))
           displaySpinner.Start(@globalBuffers)
-
-'        DISPLAY_FLASHER:
-'          setName(string("Flasher "))
-'          displaySpinner.Start(@globalBuffers)
 
         DISPLAY_LIFE:
           setName(string("Life "))
