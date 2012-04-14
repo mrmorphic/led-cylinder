@@ -151,6 +151,9 @@ con
   ADC_CHANNELS = 2
   ADC_BITCOUNT = 10
 
+  STARTUP_TIME = 1340000000
+
+  MODE_DISPLAY_TIME = 500000000
 var
   ' cylinder frame buffers, 2 of 128 longs etc. Each long is an RGB value.
   long frameBuffer[256]
@@ -194,6 +197,8 @@ var
 
   byte menuControl
 
+  byte displayTimer
+  long displayTimeout
 obj
    cylinderPWM     : "CylinderControllerPWM"
    cylinderTrans   : "CylinderControllerTransmitter"
@@ -216,7 +221,7 @@ obj
    displayLife     : "DisplayLife"
 '   displayFade   : "DisplayFade"
 
-pub Main | rpt, newDisplay
+pub Main | rpt, newDisplay, startCnt, startupDone
   ' Turn blue light on. Any project worth it's salt has to have a blue light.
   dira[TEST_LED_PIN] := 1
   outa[TEST_LED_PIN] := 1
@@ -282,18 +287,23 @@ pub Main | rpt, newDisplay
   newDisplay := DISPLAY_STARTUP
   rpt := 0
 
+  displayTimer := 0
+
   menuControl := 0
+
+  startCnt := CNT
+  startupDone := 0
 
   minAdc := 1024
   maxAdc := 0
   ' This is the main control loop.
   repeat
     ' ping the ADC
-'    adcValue := adc.in(0)
-'    if adcValue < minAdc
-'      minAdc := adcValue
-'    if adcValue > maxAdc
-'      maxAdc := adcValue
+    adcValue := adc.in(0)
+    if adcValue < minAdc
+      minAdc := adcValue
+    if adcValue > maxAdc
+      maxAdc := adcValue
 '    LCD.cmd(LCD#HOME)
 '    LCD.dec(adcValue)
 '    LCD.str(String("   "))
@@ -330,13 +340,17 @@ pub Main | rpt, newDisplay
     if menuControl == MENU_STATE_RIGHT_FINAL
       newDisplay := newDisplay + 1
       if newDisplay > MAX_DISPLAYS
-        newDisplay := 1
+        newDisplay := 2        ' skips startup
       menuControl := MENU_STATE_NONE
     if menuControl == MENU_STATE_LEFT_FINAL
       newDisplay := newDisplay - 1
-      if newDisplay < 1
+      if newDisplay < 2        ' skips startup
         newDisplay := MAX_DISPLAYS
       menuControl := MENU_STATE_NONE
+
+    if CNT > (startCnt + STARTUP_TIME) and startupDone == 0
+      startupDone := 1
+      newDisplay := DISPLAY_RAIN
 
     'output data read to serial port
 '    uart.dec(Nun.joyX)
@@ -431,6 +445,9 @@ pub Main | rpt, newDisplay
         DISPLAY_TEST:
           setName(string("Test    "))
           displayTest.Start(@globalBuffers)
+    if displayTimer == 1 and displayTimeout < CNT
+      displayRandomStuff
+      displayTimer := 0
 
 ' set menu control based on nunchuck inputs and prior state
 pub calcMenuControl
@@ -474,4 +491,12 @@ pub setName(str)
   LCD.cmd(LCD#LINE2)
   LCD.str(string("                "))
   LCD.cursor(2)
+  displayTimeout := CNT + MODE_DISPLAY_TIME
+  displayTimer := 1
+
+PUB displayRandomStuff
+  LCD.cmd(LCD#HOME)
+  LCD.str(string("use nunchuck L/R"))
+  LCD.cmd(LCD#LINE2)
+  LCD.str(string("    to change   "))
 
