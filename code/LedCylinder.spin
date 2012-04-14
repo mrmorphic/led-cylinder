@@ -12,7 +12,44 @@
   - 4: frame buffer routines (assembly optimised versions for speed)
   - 5: parallel serial terminal (debugging only)
   - 6: display function
+  - 7: ADC
   Compiler path must include ./lib
+
+  Port usage:
+    P0:         TLC5940 BLANK
+    P1:         TLC5940 GSCLK
+    P2:         TLC5940 XLAT
+    P3:         TLC5940 SCLK
+    P4:         TLC5940 SIN (red chip top 4 four rows)
+    P5:         TLC5940 SIN (green chip top four rows)
+    P6:         TLC5940 SIN (blue chip top four rows)
+    P7:         TLC5940 SIN (red chip bottom four rows)
+    P8:         TLC5940 SIN (green chip bottom four rows)
+    P9:         TLC5940 SIN (blue chip bottom four rows)
+    P10:        ROWSEL 0
+    P11:        ROWSEL 1
+    P12:        ROW enable for led cyclinder
+    P13:        ADC CLK
+    P14:        ADC CS/SHDN
+    P15:        ADC Din/Dout
+    P16:        ADC DOUT
+    P17:        N/C
+    P18:        reserved for LCD backlight
+    P19:        LCD E
+    P20:        LCD RW
+    P21:        LCD RS
+    P22:        LCD DB4
+    P23:        LCD DB5
+    P24:        LCD DB6
+    P25:        LCD DB7
+    P26:        N/C
+    P27:        N/C
+    P28:        I2C clock
+    P29:        I2C data
+    P30:        serial TX
+    P31:        serial RX
+
+
 
   User interaction is via the nunchuck. Holding C button indicates a control function:
   - left and right pulses on joystick move between displays
