@@ -15,3 +15,8 @@
 /code/IR_kit/serial_terminal.spin
 /code/old/CylinderController.spin
 /code/old/LedCylinder.spin
+circuit/LED cylinder_v2.s#1
+circuit/LED cylinder_v2.s#2
+*~
+*.binary
+
