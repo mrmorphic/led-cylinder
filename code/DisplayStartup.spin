@@ -4,10 +4,14 @@ con
   FADE_IN_DELAY = 15
   COLOUR1 = $ff0000
   COLOUR2 = $00ff00
+  COLOUR3 = $00ffff
+
   BG_SPEED = 3
   BG_MAX = 127
   BG_MIN = -200
   BG_DARK_DELAY = 50
+
+  STAGE_2_ROW_HEIGHT = 8
 
 var
   long Stack[80]
@@ -20,6 +24,8 @@ var
   long backgroundColour
 
   long c1a, c1b, c1c, c1d, c2a, c2b, c2c, c2d
+
+  long st2row1y, st2row2y
 obj
   frame       : "FrameManipulation"
 
@@ -36,7 +42,7 @@ PUB Stop
   if cog
     cogstop(cog~ - 1)
 
-PRI Run | stage, count, x, spd, intensity, intcount, bgCount, bgDir, bgColVirt
+PRI Run | count, x, spd, intensity, intcount, bgCount, bgDir, bgColVirt, st2count, running
   frame.EnableDoubleBuffering
 
   CalcPalette
@@ -50,7 +56,6 @@ PRI Run | stage, count, x, spd, intensity, intcount, bgCount, bgDir, bgColVirt
   bgCount := 1000
   bgDir := 1
 
-  stage := 1
   count := 0
   x := 0
   spd := SPEED
@@ -58,36 +63,42 @@ PRI Run | stage, count, x, spd, intensity, intcount, bgCount, bgDir, bgColVirt
   intcount := FADE_IN_DELAY
   intensity := 0
 
-  repeat
+  ' stage 2 rows are just off screen
+  st2row1y := 8
+  st2count := -2850
+  running := 1
+
+  repeat while running == 1
     Background
 
-    case stage
-      1:
-        line(x, c1a)
-        line(x-1, c1b)
-        line(x-2, c1c)
-        line(x-3, c1d)
+    line(x, c1a)
+    line(x-1, c1b)
+    line(x-2, c1c)
+    line(x-3, c1d)
 
-        line(x+8, c2a)
-        line(x+7, c2b)
-        line(x+6, c2c)
-        line(x+5, c2d)
+    line(x+8, c2a)
+    line(x+7, c2b)
+    line(x+6, c2c)
+    line(x+5, c2d)
 
-	spd := spd - 1
-        if spd == 0
-          spd := SPEED
-          x := (x + 1) & $f
-        intcount := intcount - 1
-        if intcount == 0
-          intcount := FADE_IN_DELAY
-          intensity := intensity + 1
-          if intensity > (FADE_IN_STEPS - 1)
-            intensity := FADE_IN_STEPS - 1
-          setPalette(intensity)
+    spd := spd - 1
+    if spd == 0
+      spd := SPEED
+      x := (x + 1) & $f
 
-        bgCount := bgCount - 1
-        if bgCount < BG_SPEED
-          if bgCount == 0
+    ' check for intensity increase as we ramp up bars to full brightness
+    intcount := intcount - 1
+    if intcount == 0
+      intcount := FADE_IN_DELAY
+      intensity := intensity + 1
+      if intensity > (FADE_IN_STEPS - 1)
+        intensity := FADE_IN_STEPS - 1
+      setPalette(intensity)
+
+    ' background pulses in and out
+    bgCount := bgCount - 1
+    if bgCount < BG_SPEED
+      if bgCount == 0
             bgCount := BG_SPEED
             if bgDir == 1
               backgroundColour := backgroundColour + 2
@@ -101,6 +112,18 @@ PRI Run | stage, count, x, spd, intensity, intcount, bgCount, bgDir, bgColVirt
                 backgroundColour := $3
               if bgColVirt =< BG_MIN
                 bgDir := 1
+
+    st2count := st2count + 1
+    if st2count => 0
+      if st2count == 0
+        st2row1y := st2row1y + 1
+
+      if (st2count // 8) == 0
+        ' adjust the stage 2 bar position
+        st2row1y := st2row1y - 1
+        if (st2row1y + STAGE_2_ROW_HEIGHT - 1) < 0
+          running := 0
+      drawStage2Row
 
     frame.swapBuffers
 
@@ -134,4 +157,29 @@ PRI CalcPalette | i, offset
     Palette[offset+2] := (($30 * i) / FADE_IN_STEPS) << 24
     Palette[offset+3] := (($10 * i) / FADE_IN_STEPS) << 24
     offset := offset + 4
+
+PRI drawStage2Row | i, j
+  repeat i from 0 to STAGE_2_ROW_HEIGHT + 7
+    j := st2row1y + i
+    frame.Row(j, st2palette[i])
+
+DAT
+  ' STAGE_2_ROW_HEIGHT longs decreasing in intensity, plus 8 of black
+  st2palette   long   $00ffff
+               long   $00dddd
+               long   $00bbbb
+               long   $009999
+               long   $007777
+               long   $005555
+               long   $003333
+               long   $001111
+
+               long   $000000
+               long   $000000
+               long   $000000
+               long   $000000
+               long   $000000
+               long   $000000
+               long   $000000
+               long   $000000
 
