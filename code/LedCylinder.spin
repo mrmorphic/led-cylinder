@@ -145,6 +145,12 @@ con
   MENU_STATE_DOWN_1
   MENU_STATE_DOWN_FINAL
 
+  ADC_DATA_PIN = 15
+  ADC_CLK_PIN = 13
+  ADC_RSCS_PIN = 14
+  ADC_CHANNELS = 2
+  ADC_BITCOUNT = 10
+
 var
   ' cylinder frame buffers, 2 of 128 longs etc. Each long is an RGB value.
   long frameBuffer[256]
@@ -179,6 +185,9 @@ var
 
   long calibX
   long calibY
+  long adcValue
+  long maxAdc
+  long minAdc
 
   ' index of current display, 1..maxDisplays
   long currentDisplay
@@ -193,19 +202,19 @@ obj
    random          : "RealRandom"
    frame           : "FrameManipulation"
    LCD             : "jm_lcd4_ez"
+   adc             : "MCP3202"
    displayStartup  : "DisplayStartup"
    displayRandom   : "DisplayRandom"
    displayTest     : "DisplayTest"
-   displaySmiley   : "DisplayImage"
    displayBlobs    : "DisplayBlobs"
    displaySelfPong : "DisplaySelfPong"
    displayRain     : "DisplayRain"
    displaySpinner  : "DisplaySpinner"
    displayRings    : "DisplayRings"
    displayRainbow  : "DisplayRainbow"
+ '  displayBars     : "DisplayBars"
    displayLife     : "DisplayLife"
 '   displayFade   : "DisplayFade"
-'   displayBars   : "DisplayBars"
 
 pub Main | rpt, newDisplay
   ' Turn blue light on. Any project worth it's salt has to have a blue light.
@@ -222,6 +231,7 @@ pub Main | rpt, newDisplay
   globalBuffers[0] := @frameBuffer
   globalBuffers[1] := @frameBufferControl
   globalBuffers[2] := random.random_ptr
+  globalBuffers[3] := @adcValue
 
   ' initialise frame buffer
   frameBufferControl := 0
@@ -255,6 +265,9 @@ pub Main | rpt, newDisplay
   cylinderTrans.Start(@currentLedRow, @frameBuffer, @frameBufferControl)
   cylinderPWM.Start(@currentLedRow)
 
+  ' start ADC
+  adc.start(ADC_DATA_PIN, ADC_CLK_PIN, ADC_RSCS_PIN, 0)
+
   ' Set the enable pin low, which enables physical refresh. By default this pin is an
   ' input and pulled high, which disables the 74HC139 that drives row anodes. When
   ' the propeller gets reset, it goes back to input, effectively blanking the output.
@@ -271,8 +284,24 @@ pub Main | rpt, newDisplay
 
   menuControl := 0
 
+  minAdc := 1024
+  maxAdc := 0
   ' This is the main control loop.
   repeat
+    ' ping the ADC
+'    adcValue := adc.in(0)
+'    if adcValue < minAdc
+'      minAdc := adcValue
+'    if adcValue > maxAdc
+'      maxAdc := adcValue
+'    LCD.cmd(LCD#HOME)
+'    LCD.dec(adcValue)
+'    LCD.str(String("   "))
+'    LCD.dec(minAdc)
+'    LCD.str(String(" "))
+'    LCD.dec(maxAdc)
+'    LCD.str(String(" "))
+
     if currentDisplay <> 0
       newDisplay := currentDisplay
 
