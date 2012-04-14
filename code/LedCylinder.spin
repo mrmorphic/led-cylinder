@@ -117,15 +117,16 @@ con
   DISPLAY_STARTUP
   DISPLAY_BLOBS
   DISPLAY_RAIN
-  DISPLAY_PULSER
-  DISPLAY_DROPS
+'  DISPLAY_PULSER
+'  DISPLAY_DROPS
   DISPLAY_RINGS
   DISPLAY_RAINBOW
+'  DISPLAY_BARS
   DISPLAY_SPINNER
-  DISPLAY_FLASHER
+'  DISPLAY_FLASHER
   DISPLAY_LIFE
   DISPLAY_RANDOM
-  DISPLAY_IMAGE
+'  DISPLAY_IMAGE
   DISPLAY_SELFPONG
   DISPLAY_TEST
 
@@ -331,10 +332,10 @@ pub Main | rpt, newDisplay
         DISPLAY_RAIN:
           displayRain.Stop
 
-        DISPLAY_PULSER:
+'        DISPLAY_PULSER:
 '          displayRain.Stop
 
-        DISPLAY_DROPS:
+'        DISPLAY_DROPS:
 '          displayRain.Stop
 
         DISPLAY_RINGS:
@@ -343,10 +344,13 @@ pub Main | rpt, newDisplay
         DISPLAY_RAINBOW:
           displayRainbow.Stop
 
+'        DISPLAY_BARS:
+'          displayBars.Stop
+
         DISPLAY_SPINNER:
           displaySpinner.Stop
 
-        DISPLAY_FLASHER:
+'        DISPLAY_FLASHER:
 '          displaySpinner.Stop
 
         DISPLAY_LIFE:
@@ -354,9 +358,6 @@ pub Main | rpt, newDisplay
 
         DISPLAY_RANDOM:
           displayRandom.Stop
-
-        DISPLAY_IMAGE:
-          displaySmiley.Stop
 
         DISPLAY_SELFPONG:
           displaySelfPong.Stop
@@ -379,12 +380,12 @@ pub Main | rpt, newDisplay
           setName(string("Rain    "))
           displayRain.Start(@globalBuffers)
 
-        DISPLAY_PULSER:
-          setName(string("Pulser  "))
+'        DISPLAY_PULSER:
+'          setName(string("Pulser  "))
 '          displayRain.Start(@globalBuffers)
 
-        DISPLAY_DROPS:
-          setName(string("Drops   "))
+'        DISPLAY_DROPS:
+'          setName(string("Drops   "))
 '          displayRain.Start(@globalBuffers)
 
         DISPLAY_RINGS:
@@ -395,12 +396,16 @@ pub Main | rpt, newDisplay
           setName(string("Rainbow "))
           displayRainbow.Start(@globalBuffers)
 
+'        DISPLAY_BARS:
+'          setName(string("VU Meter"))
+'          displayBars.Start(@globalBuffers)
+
         DISPLAY_SPINNER:
           setName(string("Spinner "))
           displaySpinner.Start(@globalBuffers)
 
-        DISPLAY_FLASHER:
-          setName(string("Flasher "))
+'        DISPLAY_FLASHER:
+'          setName(string("Flasher "))
 '          displaySpinner.Start(@globalBuffers)
 
         DISPLAY_LIFE:
@@ -410,10 +415,6 @@ pub Main | rpt, newDisplay
         DISPLAY_RANDOM:
           setName(string("Random  "))
           displayRandom.Start(@globalBuffers)
-
-        DISPLAY_IMAGE:
-          setName(string("Image   "))
-          displaySmiley.Start(@globalBuffers)
 
         DISPLAY_SELFPONG:
           setName(string("SelfPong"))
