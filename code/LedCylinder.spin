@@ -247,7 +247,7 @@ pub Main | rpt, newDisplay
   LCD.init(LCDBasePin, 2, 16)
   LCD.display(1)
   LCD.cmd(LCD#HOME)
-  LCD.str(string(" WELCOME HUMAN  "))
+  LCD.str(string(" Welcome human  "))
   LCD.cmd(LCD#LINE2)
   LCD.str(string("                "))
 
