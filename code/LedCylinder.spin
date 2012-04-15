@@ -112,21 +112,17 @@ con
 '  _irrpin         = 26          'ir receiver module on this pin
 
   ' Constants for display handling
-  MAX_DISPLAYS      = 10
+  MAX_DISPLAYS      = 11
   #1
   DISPLAY_STARTUP
   DISPLAY_RAIN
   DISPLAY_BLOBS
-'  DISPLAY_PULSER
-'  DISPLAY_DROPS
   DISPLAY_RINGS
   DISPLAY_RAINBOW
-'  DISPLAY_BARS
+  DISPLAY_BARS
   DISPLAY_SPINNER
-'  DISPLAY_FLASHER
   DISPLAY_LIFE
   DISPLAY_RANDOM
-'  DISPLAY_IMAGE
   DISPLAY_SELFPONG
   DISPLAY_TEST
 
@@ -217,7 +213,7 @@ obj
    displaySpinner  : "DisplaySpinner"
    displayRings    : "DisplayRings"
    displayRainbow  : "DisplayRainbow"
- '  displayBars     : "DisplayBars"
+   displayBars     : "DisplayBars"
    displayLife     : "DisplayLife"
 '   displayFade   : "DisplayFade"
 
@@ -381,8 +377,8 @@ pub Main | rpt, newDisplay, startCnt, startupDone
         DISPLAY_RAINBOW:
           displayRainbow.Stop
 
-'        DISPLAY_BARS:
-'          displayBars.Stop
+        DISPLAY_BARS:
+          displayBars.Stop
 
         DISPLAY_SPINNER:
           displaySpinner.Stop
@@ -400,10 +396,12 @@ pub Main | rpt, newDisplay, startCnt, startupDone
           displayTest.Stop
 
       currentDisplay := newDisplay
+      startupDone := 1
 
       ' start new display
       case currentDisplay
         DISPLAY_STARTUP:
+          startupDone := 0
           displayStartup.Start(@globalBuffers)
 
         DISPLAY_RAIN:
@@ -422,9 +420,9 @@ pub Main | rpt, newDisplay, startCnt, startupDone
           setName(string("Rainbow "))
           displayRainbow.Start(@globalBuffers)
 
-'        DISPLAY_BARS:
-'          setName(string("VU Meter"))
-'          displayBars.Start(@globalBuffers)
+        DISPLAY_BARS:
+          setName(string("VU Meter"))
+          displayBars.Start(@globalBuffers)
 
         DISPLAY_SPINNER:
           setName(string("Spinner "))
