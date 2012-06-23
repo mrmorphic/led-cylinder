@@ -2,18 +2,17 @@
 con
   batColour = $ffffff
   ballColour = $ff00ff
-  batX = 4
 var
   long Stack[60]
   byte cog
   long frameBufPtr
   long randomPtr
+  long nunchuckPtr
 
   long ballDir   ' 0 for backwards, 1 forwards
   long ballAngle
+  long batX
   long batY     ' in 1/10 pixel
-  long batDir
-  long batYTarget
   long ballX
   long ballY    ' ball vertical position measured in 1/10 pixel
   long ballYInc ' increment of ballY in 1/10 pixel
@@ -24,6 +23,7 @@ pub Start(globalBuffersPtr) : success | ci
   Stop
 
   randomPtr := long[globalBuffersPtr][2]
+  nunchuckPtr := long[globalBuffersPtr][5]
 
   frame.Init(globalBuffersPtr)
 
@@ -36,8 +36,8 @@ pub Stop
 pri Run | nx,ny
   frame.EnableDoubleBuffering
 
+  batX := 0
   batY := 30
-  batYTarget := batY
   ballDir := 1
   ballYInc := 4
   ballX := 7
@@ -46,22 +46,8 @@ pri Run | nx,ny
   repeat
     frame.ShowAll(0) ' clear frame
 
-    ' determine if the bat should be moved, and move it.
-    if batY <> batYTarget
-      if batY < batYTarget
-        batY += 1
-      else
-        batY -= 1
-    else
-      ' work out a new target
-      batYTarget := long[randomPtr] // 60
-      if batYTarget < 10
-        batYTarget := 10
-
-    ' draw bat
-    frame.pixel(batX, batY / 10, batColour)
-    frame.pixel(batX, (batY / 10) +1, batColour)
-    frame.pixel(batX, (batY / 10) +2, batColour)
+    MoveBat
+    DrawBat
 
     ' calculate ball's next pos
     nx := CalcNewBallX
@@ -84,6 +70,26 @@ pri Run | nx,ny
     frame.SwapBuffers
 
     waitcnt(10_000_000 + cnt)
+
+PRI MoveBat | nx, ny
+  nx := long[nunchuckPtr]
+  ny := long[nunchuckPtr][1]
+
+  if ny > 80 and batY < 79
+    batY += 10
+  if ny < -80 and batY > 0
+    batY -= 10
+
+  if nx > 80
+    batX += 1
+  if nx < -80
+    batX -= 1
+  batX := batX & $f
+
+PRI DrawBat
+   frame.pixel(batX, batY / 10, batColour)
+   frame.pixel(batX, (batY / 10) +1, batColour)
+   frame.pixel(batX, (batY / 10) +2, batColour)
 
 PRI calcNewBallX : x
   if ballDir == 1
