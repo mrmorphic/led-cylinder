@@ -7,11 +7,14 @@ var
   byte cog
   long frameBufPtr
   long randomPtr
+  long nunchuckPtr
 
   long backgroundColour
+  long backgroundAlpha
   long backgroundChangeTime
   long backgroundInc
 
+  long rainColourIndex
   long rainColour
 
   long countDrops
@@ -25,6 +28,7 @@ PUB Start(globalBuffersPtr) : success | ci
   Stop
 
   randomPtr := long[globalBuffersPtr][2]
+  nunchuckPtr := long[globalBuffersPtr][5]
 
 '  frame.Init(globalBuffersPtr)
 
@@ -36,12 +40,15 @@ PUB Stop
 
 PRI Run | i, delay, drop, nextCol, startCnt
   frame.EnableDoubleBuffering
+  frame.SetPalette(frame#PALETTE_HOTCOLD)
 
-  backgroundColour := $00
+  backgroundColour := 00
+  backgroundAlpha := 0
+  rainColourIndex := 0
+  rainColour := frame.ColourInPalette(rainColourIndex)
+
   backgroundChangeTime := cnt + backgroundSpeed
   backgroundInc := 1
-
-  rainColour := $ff
 
   ' initialise drops
   repeat i from 0 to MAX_DROPS - 1
@@ -55,6 +62,8 @@ PRI Run | i, delay, drop, nextCol, startCnt
 
   repeat
     startCnt := cnt
+
+    CheckRainColourAdjust
 
     Background
 
@@ -89,19 +98,36 @@ PRI Run | i, delay, drop, nextCol, startCnt
         frame.PixelAlpha(dropColumn[i], (dropHeight[i] / 100) + 1, $60000000 | rainColour)
         frame.PixelAlpha(dropColumn[i], (dropHeight[i] / 100) + 2, $30000000 | rainColour)
 
-'    frame.Pixel(0,0,$ff0000)
     frame.swapBuffers
 
     delay := 600_000
 
     waitcnt(delay + cnt) ' gives us a more consistent frame rate
 
-PRI Background
+PRI Background | c
   frame.ShowAll(backgroundColour)
   if cnt > backgroundChangeTime
     backgroundChangeTime := cnt + backgroundSpeed
-    if backgroundColour == 0 and backgroundInc < 0
+    if backgroundAlpha == 0 and backgroundInc < 0
       backgroundInc := 1
-    if backgroundColour == $20 and backgroundInc > 0
+    if backgroundAlpha == $20 and backgroundInc > 0
       backgroundInc := -1
-    backgroundColour += backgroundInc
+    backgroundAlpha += backgroundInc
+    c := (backgroundAlpha << 24) | rainColour
+    backgroundColour := frame.AlphaBlendPixel(0, c)
+
+PRI CheckRainColourAdjust | nunY, orig
+  nunY := long[nunchuckPtr][1]
+  orig := rainColourIndex
+  if nunY > 80
+    rainColourIndex := rainColourIndex + 4
+  if nunY < -80
+    rainColourIndex := rainColourIndex - 4
+  if rainColourIndex <> orig
+    if rainColourIndex > 1023
+      rainColourIndex := 1023
+    if rainColourIndex < 0
+      rainColourIndex := 0
+    rainColour := frame.ColourInPalette(rainColourIndex)
+
+
