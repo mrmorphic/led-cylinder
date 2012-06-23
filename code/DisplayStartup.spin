@@ -18,6 +18,7 @@ var
   byte cog
   long frameBufPtr
   long randomPtr
+  long displayControlPtr
 
   long Palette[FADE_IN_STEPS * 4]
 
@@ -33,6 +34,7 @@ PUB Start(globalBuffersPtr) : success | ci
   Stop
 
   randomPtr := long[globalBuffersPtr][2]
+  displayControlPtr := long[globalBuffersPtr][4]
 
   frame.Init(globalBuffersPtr)
 
@@ -123,6 +125,7 @@ PRI Run | count, x, spd, intensity, intcount, bgCount, bgDir, bgColVirt, st2coun
         st2row1y := st2row1y - 1
         if (st2row1y + STAGE_2_ROW_HEIGHT - 1) < 0
           running := 0
+          long[displayControlPtr] := 1
       drawStage2Row
 
     frame.swapBuffers
