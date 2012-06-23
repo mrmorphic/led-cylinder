@@ -1,21 +1,18 @@
+con
+  MAX_CHANGE_POINTS = 1
+  BG_SPEED = 4
+
 var
-  long Stack[60]
+  long Stack[200]
   byte cog
   long frameBufPtr
   long randomPtr
 
-  long tempBlob1[65]   ' temporary storage of up to 8x8 for generating coloured blobs, plus
-                       ' two words for the size.
-  long tempBlob2[65]   ' temporary storage of up to 8x8 for generating coloured blobs, plus
-                       ' two words for the size.
-  long tempBlob3[65]   ' temporary storage of up to 8x8 for generating coloured blobs, plus
-                       ' two words for the size.
-  long tempBlob4[65]   ' temporary storage of up to 8x8 for generating coloured blobs, plus
-                       ' two words for the size.
-  long x1, y1, c1, count1
-  long x2, y2, c2, count2
-  long x3, y3, c3, count3
-  long x4, y4, c4, count4
+  word cells[128]
+
+  byte chgX[MAX_CHANGE_POINTS]
+  byte chgY[MAX_CHANGE_POINTS]
+  byte chgCount[MAX_CHANGE_POINTS]
 OBJ
   frame       : "FrameManipulation"
 
@@ -34,129 +31,79 @@ PUB Stop
 
 PRI Run | c,x,y,size,delay,srcPtr
   frame.EnableDoubleBuffering
-'  frame.DisableDoubleBuffering
-  frame.ShowAll($ff)
-  frame.SwapBuffers
+  frame.SetPalette(frame#PALETTE_HOTCOLD)
+
+  initialiseCells
+
   repeat
-    ' determine a location, colour and size for blob 1
-    x1 := long[randomPtr] & $7 + 8
-    y1 := long[randomPtr] // 6
-    c1 := long[randomPtr] & $ffffff
-    if long[randomPtr] & 1 == 1
-      frame.CopyImage(@tempBlob1, @blob3)
-    else
-      frame.CopyImage(@tempBlob1, @blob5)
-    frame.ImageTransateColourAlpha(@tempBlob1, $ffffff, c1)
+    displayCells
+    updateCells
+    waitcnt(cnt + 5_000_000)
+    frame.SwapBuffers
 
-    x2 := long[randomPtr] & $7 + 8
-    y2 := long[randomPtr] // 6
-    c2 := long[randomPtr] & $ffffff
-    if long[randomPtr] & 1 == 1
-      frame.CopyImage(@tempBlob2, @blob3)
-    else
-      frame.CopyImage(@tempBlob2, @blob5)
-    frame.ImageTransateColourAlpha(@tempBlob2, $ffffff, c2)
+' initialise cells with the starting indexes to display
+pri initialiseCells | x, y, c
+  c := long[randomPtr] & $1ff   ' starting index not always the same, but in lower range
+  repeat x from 0 to 127
+    cells[x] := c
+'  repeat c from 1 to 5
+'    x := long[randomPtr] & $f
+'    y := long[randomPtr] & 7
+    adjustPoint(x, y, 20, (long[randomPtr] & $f + 10))
+  repeat c from 0 to MAX_CHANGE_POINTS - 1
+    chgX[c] := long[randomPtr] & $f
+    chgY[c] := long[randomPtr] & 7
+    chgCount[c] := (long[randomPtr] & 7) + 20
 
-    x3 := long[randomPtr] & $7
-    y3 := long[randomPtr] // 6
-    c3 := long[randomPtr] & $ffffff
-    if long[randomPtr] & 1 == 1
-      frame.CopyImage(@tempBlob3, @blob3)
-    else
-      frame.CopyImage(@tempBlob3, @blob5)
-    frame.ImageTransateColourAlpha(@tempBlob3, $ffffff, c3)
+' perform incremental updates to cells
+pri updateCells | i
+  repeat i from 0 to 127
+    cells[i] := (cells[i] + BG_SPEED) & 1023
+  repeat i from 0 to MAX_CHANGE_POINTS - 1
+    adjustPoint(chgX[i], chgY[i], 10, 1)
+    chgCount[i] := chgCount[i] - 1
+    if chgCount[i] == 0
+      chgX[i] := long[randomPtr] & $f
+      chgY[i] := long[randomPtr] & 7
+      chgCount[i] := (long[randomPtr] & 7) + 20
+  
 
-    x4 := long[randomPtr] & $7
-    y4 := long[randomPtr] // 6
-    c4 := long[randomPtr] & $ffffff
-    if long[randomPtr] & 1 == 1
-      frame.CopyImage(@tempBlob4, @blob3)
-    else
-      frame.CopyImage(@tempBlob4, @blob5)
-    frame.ImageTransateColourAlpha(@tempBlob1, $ffffff, c4)
+' update the frame buffer from the cells, translating into palette colours
+pri displayCells | x, y, c
+  repeat y from 0 to 7
+    repeat x from 0 to 15
+      c := frame.ColourInPalette(cells[y * 16 + x])
+      frame.Pixel(x, y, c)
 
-    delay := long[randomPtr]
-    delay &= $fffff
-    delay += 100_000
+' Adjust a point's colour index up or down for a number of iterations. Also adjusts cells around (x,y), wrapping
+' in x but not y.
+' @param x             x coord of point
+' @param y             y coord of point
+' @param inc           a small positive or negative integer which is the adjustment to the cell per iteration
+' @param iterations    number of times repeated. Generally 1 for main loop, but initialisation may perform this
+'                      multiple times to get an interesting state
+pri adjustPoint(x, y, inc, iterations) | c, i
+  repeat c from 1 to iterations
+    bumpCell(x, y, inc)
+    bumpCell(x-1,y, inc-7)
+    bumpCell(x+1,y, inc-7)
+    bumpCell(x,y-1, inc-7)
+    bumpCell(x,y+1, inc-7)
 
-'    srcPtr := @blob3
+    bumpCell(x-2,y, inc-4)
+    bumpCell(x+2,y, inc-4)
+    bumpCell(x,y-2, inc-4)
+    bumpCell(x,y+2, inc-4)
 
-    ' generate a new image into tempBlob using the selected image,
-    ' and with the white substituted for c
-'    frame.CopyImage(@tempBlob1, srcPtr)
-'    frame.ImageTransateColourAlpha(@tempBlob1, $ffffff, c)
+    bumpCell(x-1,y-1, inc-4)
+    bumpCell(x+1,y-1, inc-4)
+    bumpCell(x-1,y+1, inc-4)
+    bumpCell(x+1,y+1, inc-4)
 
-    ' start with whatever was there
-'    frame.CopyDispToDrawingBuffer
-
-    ' draw the blob on the frame buffer
-    repeat 20
-      frame.CopyDispToDrawingBuffer
-      frame.ImageAlpha(@tempBlob1, x1, y1)
-      frame.ImageAlpha(@tempBlob2, x2, y2)
-      frame.ImageAlpha(@tempBlob3, x3, y3)
-      frame.ImageAlpha(@tempBlob4, x4, y4)
-      frame.SwapBuffers
-      waitcnt(500_000 + cnt)
-'    frame.Pixel(x,y,c)
-'    frame.Pixel(x+1,y,c)
-'    frame.Pixel(x,y+1,c)
-'    frame.Pixel(x+1,y+1,c)
-
-'    frame.SwapBuffers
-
-'    waitcnt(delay + cnt)
-
-dat
-  blob3       word      3
-              word      3
-
-              long      $08ffffff
-              long      $80ffffff
-              long      $08ffffff
-
-              long      $80ffffff
-              long      $80ffffff
-              long      $80ffffff
-
-              long      $08ffffff
-              long      $80ffffff
-              long      $08ffffff
-
-  ' a round semi-transparent blob. Edges have higher transparency values.
-  ' The colours are artificial. White is used for all displayed pixels,
-  ' but in practice these are replaced by a random colour
-  blob5       word      5                       ' width
-              word      5                       ' height
-
-              long      $0
-              long      $08ffffff
-              long      $80ffffff
-              long      $08ffffff
-              long      $0
-
-              long      $08ffffff
-              long      $80ffffff
-              long      $80ffffff
-              long      $80ffffff
-              long      $08ffffff
-
-              long      $80ffffff
-              long      $80ffffff
-              long      $80ffffff
-              long      $80ffffff
-              long      $80ffffff
-
-              long      $08ffffff
-              long      $80ffffff
-              long      $80ffffff
-              long      $80ffffff
-              long      $08ffffff
-
-              long      $0
-              long      $08ffffff
-              long      $80ffffff
-              long      $08ffffff
-              long      $0
-
+pri bumpCell(x, y, inc) | i
+  if y < 0 or y > 15
+    return
+  x := x & $f
+  i := y * 16 + x
+  cells[i] := cells[i] + inc
 
