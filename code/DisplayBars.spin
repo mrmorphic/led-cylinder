@@ -4,6 +4,7 @@ con
   SAMPLE_RING_SIZE = 25
   SHRINK_COUNT = 20
   DECAY_SPEED = 1
+  ROTATE_SPEED = 1
 
   ' ring=10, shrink=50 not bad
 var
@@ -34,8 +35,8 @@ PUB Stop
   if cog
     cogstop(cog~ - 1)
 
-PRI Run | y, x, c, delay, p, minA, maxA, range, stepA, midA, shrinkCount, aveSample, rawSample, displayLevel, decayCount
-  frame.EnableDoubleBuffering
+PRI Run | i, x, c, delay, p, minA, maxA, range, stepA, midA, shrinkCount, aveSample, rawSample, displayLevel, decayCount, rc
+  frame.DisableDoubleBuffering
   frame.SetPalette(frame#PALETTE_HOTCOLD)
 
   minA := 1024
@@ -46,15 +47,18 @@ PRI Run | y, x, c, delay, p, minA, maxA, range, stepA, midA, shrinkCount, aveSam
   colourInc := 127
 
   ' load sample ring
-  repeat x from 0 to SAMPLE_RING_SIZE - 1
-    sampleRing[x] := long[adcPtr]
+  repeat i from 0 to SAMPLE_RING_SIZE - 1
+    sampleRing[i] := long[adcPtr]
   sampleIndex := 0
 
   shrinkCount := SHRINK_COUNT
   decayCount := DECAY_SPEED
 
+  x := 0
+  rc := ROTATE_SPEED
+
   repeat
-    frame.ShowAll(0)
+'    frame.ShowAll(0)
 
     rawSample := long[adcPtr]
     sampleRing[sampleIndex] := rawSample
@@ -64,8 +68,8 @@ PRI Run | y, x, c, delay, p, minA, maxA, range, stepA, midA, shrinkCount, aveSam
 
     ' sample is the average of the last SAMPLE_RING_SIZE samples
     aveSample := 0
-    repeat x from 0 to SAMPLE_RING_SIZE - 1
-      aveSample := aveSample + sampleRing[x]
+    repeat i from 0 to SAMPLE_RING_SIZE - 1
+      aveSample := aveSample + sampleRing[i]
     aveSample := aveSample / SAMPLE_RING_SIZE
 
     adcValue := rawSample - aveSample
@@ -105,28 +109,61 @@ PRI Run | y, x, c, delay, p, minA, maxA, range, stepA, midA, shrinkCount, aveSam
 
     if displayLeveL > (midA + stepA)
       c := frame.ColourInPalette(baseColour)
-      frame.Row(0, c)
+    else
+      c := 0
+    draw(0, x, c)
+
     if displayLeveL > (midA + (stepA * 2))
       c := frame.ColourInPalette(baseColour + colourInc)
-      frame.Row(1, c)
+    else
+      c := 0
+    draw(1, x, c)
+
     if displayLeveL > (midA + (stepA * 3))
       c := frame.ColourInPalette(baseColour + (colourInc * 2))
-      frame.Row(2, c)
+    else
+      c := 0
+    draw(2, x, c)
+
     if displayLeveL > (midA + (stepA * 4))
       c := frame.ColourInPalette(baseColour + (colourInc * 3))
-      frame.Row(3, c)
+    else
+      c := 0
+    draw(3, x, c)
+
     if displayLeveL > (midA + (stepA * 5))
       c := frame.ColourInPalette(baseColour + (colourInc * 4))
-      frame.Row(4, c)
+    else
+      c := 0
+    draw(4, x, c)
+
     if displayLeveL > (midA + (stepA * 6))
       c := frame.ColourInPalette(baseColour + (colourInc * 5))
-      frame.Row(5, c)
+    else
+      c := 0
+    draw(5, x, c)
+
     if displayLeveL > (midA + (stepA * 7))
       c := frame.ColourInPalette(baseColour + (colourInc * 6))
-      frame.Row(6, c)
+    else
+      c := 0
+    draw(6, x, c)
+
     if displayLeveL > (midA + (stepA * 8))
       c := frame.ColourInPalette(baseColour + (colourInc * 7))
-      frame.Row(7, c)
+    else
+      c := 0
+    draw(7, x, c)
+
+    rc := rc - 1
+    if rc == 0
+      x := x + 1
+      x := x & $f
+      rc := ROTATE_SPEED
 
 '    waitcnt(delay + cnt) ' gives us a more consistent frame rate
-    frame.swapBuffers
+'    frame.swapBuffers
+
+PRI draw(row, col, colour)
+  frame.Pixel(col, row, colour)
+'  frame.Row(row, colour)
