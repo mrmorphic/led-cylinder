@@ -182,8 +182,6 @@ pub ImageTransateColourAlpha(imagePtr, fromColour, toColour) | w, h, x, y, p
 ' Alpha blend v0 (opaque) and v1 with alpha. All are assumed to be 8 bit values. Returns
 ' a new 8-bit value
 pub AlphaBlend(v0, v1, alpha) : c | c1, c2
-'  c1 := ((255 - alpha) * v0) / 256   ' fractional multiplication of 8 bit * 8 bit is 16 bit.
-'  c2 := (alpha * v1) / 256
   c1 := ((255 - alpha) * v0) >> 8   ' fractional multiplication of 8 bit * 8 bit is 16 bit.
   c2 := (alpha * v1) >> 8
   c := c1 + c2
