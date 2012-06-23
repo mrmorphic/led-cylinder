@@ -147,8 +147,6 @@ con
   ADC_CHANNELS = 2
   ADC_BITCOUNT = 10
 
-  STARTUP_TIME = 1340000000
-
   MODE_DISPLAY_TIME = 500000000
 var
   ' cylinder frame buffers, 2 of 128 longs etc. Each long is an RGB value.
@@ -165,6 +163,12 @@ var
   ' cylinder row currently being displayed. Coordinates between
   ' CylinderControllerPWM and CylinderControllerTransmitter.
   long currentLedRow
+
+  ' These four must be contigious and in this order.
+  long nunchuckX
+  long nunchuckY
+  long nunchuckButtonC
+  long nunchuckButtonZ                                                                                
 
   ' global buffers that can be given to all processes
   long globalBuffers[10]
@@ -195,6 +199,11 @@ var
 
   byte displayTimer
   long displayTimeout
+
+  ' shared status where a display can tell the main controller things.
+  ' Initialised to zero, can be set to 1 if the process has finished.
+  long displayControl
+
 obj
    cylinderPWM     : "CylinderControllerPWM"
    cylinderTrans   : "CylinderControllerTransmitter"
@@ -233,6 +242,8 @@ pub Main | rpt, newDisplay, startCnt, startupDone
   globalBuffers[1] := @frameBufferControl
   globalBuffers[2] := random.random_ptr
   globalBuffers[3] := @adcValue
+  globalBuffers[4] := @displayControl
+  globalBuffers[5] := @nunchuckX
 
   ' initialise frame buffer
   frameBufferControl := 0
@@ -289,6 +300,7 @@ pub Main | rpt, newDisplay, startCnt, startupDone
 
   startCnt := CNT
   startupDone := 0
+  displayControl := 0
 
   minAdc := 1024
   maxAdc := 0
@@ -315,6 +327,11 @@ pub Main | rpt, newDisplay, startCnt, startupDone
     nunchuck.readNunchuck
     waitcnt(clkfreq/64 + cnt)
 
+    nunchuckX := nunchuck.joyX
+    nunchuckY := nunchuck.joyY
+    nunchuckButtonC := nunchuck.buttonC
+    nunchuckButtonZ := nunchuck.buttonZ
+
     calcMenuControl
 
 '    LCD.cmd(LCD#HOME)
@@ -332,6 +349,10 @@ pub Main | rpt, newDisplay, startCnt, startupDone
 '    LCD.dec(nunchuck.buttonC)
 '    LCD.str(String("   "))
 
+    if displayControl == 1
+      menuControl := MENU_STATE_RIGHT_FINAL
+      displayControl := 0
+
     ' Work out changes selected by user, if any
     if menuControl == MENU_STATE_RIGHT_FINAL
       newDisplay := newDisplay + 1
@@ -344,7 +365,7 @@ pub Main | rpt, newDisplay, startCnt, startupDone
         newDisplay := MAX_DISPLAYS
       menuControl := MENU_STATE_NONE
 
-    if CNT > (startCnt + STARTUP_TIME) and startupDone == 0
+    if displayControl
       startupDone := 1
       newDisplay := DISPLAY_RAIN
 
@@ -402,6 +423,7 @@ pub Main | rpt, newDisplay, startCnt, startupDone
       case currentDisplay
         DISPLAY_STARTUP:
           startupDone := 0
+          displayControl := 0
           displayStartup.Start(@globalBuffers)
 
         DISPLAY_RAIN:
