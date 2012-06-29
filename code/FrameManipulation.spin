@@ -233,6 +233,8 @@ pub CopyDispToDrawingBuffer | dispBuf, drawBuf
   drawBuf := GetDrawingBuffer
   longmove(drawBuf, dispBuf, 128)
 
+pub GetPaletteBuffer
+  return @paletteBuffer
 dat
 
   ' An array of parameters passed to assembly. Indexes are as follows:
