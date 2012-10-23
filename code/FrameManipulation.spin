@@ -191,7 +191,7 @@ pub RGBToColour(r,g,b) : colour
   colour |= (g & $ff) << 8
   colour |= b & $ff
 
-' Explicitly the drawing buffer
+' Explicitly set the drawing buffer
 pub SetDrawingBuffer(buffer)
   long[frameControlPtr] := (long[frameControlPtr] & $ffffff00) | (buffer & $ff)
 
