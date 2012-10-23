@@ -112,11 +112,12 @@ con
 '  _irrpin         = 26          'ir receiver module on this pin
 
   ' Constants for display handling
-  MAX_DISPLAYS      = 11
+  MAX_DISPLAYS      = 12
   #1
   DISPLAY_STARTUP
   DISPLAY_RAIN
   DISPLAY_BLOBS
+  DISPLAY_PING
   DISPLAY_RINGS
   DISPLAY_RAINBOW
   DISPLAY_BARS
@@ -217,6 +218,7 @@ obj
    displayRandom   : "DisplayRandom"
    displayTest     : "DisplayTest"
    displayBlobs    : "DisplayBlobs"
+   displayPing     : "DisplayPing"
    displaySelfPong : "DisplaySelfPong"
    displayRain     : "DisplayRain"
    displaySpinner  : "DisplaySpinner"
@@ -392,6 +394,9 @@ pub Main | rpt, newDisplay, startCnt, startupDone
         DISPLAY_BLOBS:
           displayBlobs.Stop
 
+        DISPLAY_PING:
+          displayPing.Stop
+
         DISPLAY_RINGS:
           displayRings.Stop
 
@@ -433,6 +438,10 @@ pub Main | rpt, newDisplay, startCnt, startupDone
         DISPLAY_BLOBS:
           setName(string("Blobs   "))
           displayBlobs.Start(@globalBuffers)
+
+        DISPLAY_PING:
+          setName(string("Pings   "))
+          displayPing.Start(@globalBuffers)
 
         DISPLAY_RINGS:
           setName(string("Rings   "))
