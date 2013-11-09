@@ -116,8 +116,9 @@ con
   #1
   DISPLAY_STARTUP
   DISPLAY_RAIN
-  DISPLAY_BLOBS
+  'DISPLAY_BLOBS
   DISPLAY_PING
+  DISPLAY_CELLULAR
   DISPLAY_RINGS
   DISPLAY_RAINBOW
   DISPLAY_BARS
@@ -219,6 +220,7 @@ obj
    displayTest     : "DisplayTest"
    displayBlobs    : "DisplayBlobs"
    displayPing     : "DisplayPing"
+   displayCellular : "DisplayCellular"
    displaySelfPong : "DisplaySelfPong"
    displayRain     : "DisplayRain"
    displaySpinner  : "DisplaySpinner"
@@ -391,12 +393,15 @@ pub Main | rpt, newDisplay, startCnt, startupDone
         DISPLAY_RAIN:
           displayRain.Stop
 
-        DISPLAY_BLOBS:
-          displayBlobs.Stop
+'        DISPLAY_BLOBS:
+ '         displayBlobs.Stop
 
         DISPLAY_PING:
           displayPing.Stop
 
+        DISPLAY_CELLULAR:
+          displayCellular.Stop
+    
         DISPLAY_RINGS:
           displayRings.Stop
 
@@ -435,13 +440,17 @@ pub Main | rpt, newDisplay, startCnt, startupDone
           setName(string("Rain    "))
           displayRain.Start(@globalBuffers)
 
-        DISPLAY_BLOBS:
-          setName(string("Blobs   "))
-          displayBlobs.Start(@globalBuffers)
+'        DISPLAY_BLOBS:
+ '         setName(string("Blobs   "))
+ '         displayBlobs.Start(@globalBuffers)
 
         DISPLAY_PING:
           setName(string("Pings   "))
           displayPing.Start(@globalBuffers)
+
+        DISPLAY_CELLULAR:
+          setName(string("Cellular"))
+          displayCellular.Start(@globalBuffers)
 
         DISPLAY_RINGS:
           setName(string("Rings   "))
