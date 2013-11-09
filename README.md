@@ -1,6 +1,6 @@
 # About
 
-This is the code for a electronics project I built, an LED cylinder. The hardware is basically a grid of 16x8 RGB LEDs arranged in vertical cylinder,
+This is the code for an electronics project I built, an LED cylinder. The hardware is basically a grid of 16x8 RGB LEDs arranged in vertical cylinder,
 with ping-pong balls over each LED. It has a nintendo nunchuck for input and a small LCD display for mode selection. The cylinder hardware and
 build can be found [on stuffwemade.net](http://stuffwemade.net/led-cylinder "LED cylinder build").
 
